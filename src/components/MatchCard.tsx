@@ -1,12 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Match } from '../types/match';
 import { formatMatchDate, formatMatchScore, getMatchStatusInfo } from '../utils/matchUtils';
+import { FavoriteButton } from './FavoriteButton';
 
 type Props = {
   match: Match;
+  isFavorite: boolean;
+  onToggleFavorite: () => void;
 };
 
-export function MatchCard({ match }: Props) {
+export function MatchCard({ match, isFavorite, onToggleFavorite }: Props) {
   const statusInfo = getMatchStatusInfo(match);
   const formattedDate = formatMatchDate(match.startsAt);
   const scoreText = formatMatchScore(match.score);
@@ -15,10 +18,13 @@ export function MatchCard({ match }: Props) {
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.date}>{formattedDate}</Text>
-        <View style={[styles.badge, styles[`badge_${statusInfo.type}`]]}>
-          <Text style={[styles.badgeText, styles[`badgeText_${statusInfo.type}`]]}>
-            {statusInfo.label}
-          </Text>
+        <View style={styles.headerRight}>
+          <View style={[styles.badge, styles[`badge_${statusInfo.type}`]]}>
+            <Text style={[styles.badgeText, styles[`badgeText_${statusInfo.type}`]]}>
+              {statusInfo.label}
+            </Text>
+          </View>
+          <FavoriteButton active={isFavorite} onPress={onToggleFavorite} />
         </View>
       </View>
 
@@ -71,6 +77,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   date: {
     fontSize: 13,

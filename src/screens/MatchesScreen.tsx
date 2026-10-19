@@ -12,10 +12,12 @@ import { FilterTabs } from '../components/FilterTabs';
 import { MatchCard } from '../components/MatchCard';
 import { UpdatedAgo } from '../components/UpdatedAgo';
 import { MATCHES_URL } from '../config';
+import { useFavorites } from '../hooks/useFavorites';
 import { Match, MatchesApiResponse, MatchFilter } from '../types/match';
 import { filterMatches } from '../utils/matchUtils';
 
 export function MatchesScreen() {
+  const { isFavorite, toggle } = useFavorites();
   const [matches, setMatches] = useState<Match[]>([]);
   const [round, setRound] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -196,7 +198,13 @@ export function MatchesScreen() {
       <FlatList
         data={filteredMatches}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <MatchCard match={item} />}
+        renderItem={({ item }) => (
+          <MatchCard
+            match={item}
+            isFavorite={isFavorite(item.id)}
+            onToggleFavorite={() => toggle(item.id)}
+          />
+        )}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
         contentContainerStyle={styles.listContent}
