@@ -1,4 +1,4 @@
-export type MatchStatus = 'finished' | 'scheduled' | 'live' | 'postponed' | string;
+export type MatchStatus = 'finished' | 'scheduled' | 'live' | 'postponed';
 
 export type Team = {
   id: string;
@@ -26,4 +26,4 @@ export type MatchesApiResponse = {
   matches: Match[];
 };
 
-export type MatchFilter = 'all' | 'upcoming' | 'finished';
+export type MatchFilter = 'all' | 'live' | 'upcoming' | 'finished';

@@ -4,15 +4,12 @@ import { MatchFilter } from '../types/match';
 type Props = {
   currentFilter: MatchFilter;
   onSelectFilter: (filter: MatchFilter) => void;
-  counts: {
-    all: number;
-    upcoming: number;
-    finished: number;
-  };
+  counts: Record<MatchFilter, number>;
 };
 
 const FILTER_ITEMS: { key: MatchFilter; label: string }[] = [
   { key: 'all', label: 'Все' },
+  { key: 'live', label: 'В игре' },
   { key: 'upcoming', label: 'Предстоящие' },
   { key: 'finished', label: 'Завершённые' },
 ];
@@ -32,7 +29,10 @@ export function FilterTabs({ currentFilter, onSelectFilter, counts }: Props) {
             accessibilityRole="tab"
             accessibilityState={{ selected: isActive }}
           >
-            <Text style={[styles.tabText, isActive && styles.activeTabText]}>
+            <Text
+              style={[styles.tabText, isActive && styles.activeTabText]}
+              numberOfLines={1}
+            >
               {item.label} {count !== undefined ? `(${count})` : ''}
             </Text>
           </Pressable>
@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500',
     color: '#6b7280',
   },

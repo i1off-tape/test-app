@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Match } from '../types/match';
-import { formatMatchDate, formatMatchScore, getMatchStatusInfo } from '../utils/matchUtils';
+import { formatMatchDate, getMatchStatusInfo, hasScore } from '../utils/matchUtils';
 import { FavoriteButton } from './FavoriteButton';
 
 type Props = {
@@ -9,10 +9,29 @@ type Props = {
   onToggleFavorite: () => void;
 };
 
+type TeamRowProps = {
+  name: string;
+  city: string;
+  score?: number;
+  showScore: boolean;
+};
+
+function TeamRow({ name, city, score, showScore }: TeamRowProps) {
+  return (
+    <View style={styles.teamRow}>
+      <View style={styles.teamInfo}>
+        <Text style={styles.teamName}>{name}</Text>
+        <Text style={styles.city}>{city}</Text>
+      </View>
+      {showScore ? <Text style={styles.teamScore}>{score}</Text> : null}
+    </View>
+  );
+}
+
 export function MatchCard({ match, isFavorite, onToggleFavorite }: Props) {
   const statusInfo = getMatchStatusInfo(match);
   const formattedDate = formatMatchDate(match.startsAt);
-  const scoreText = formatMatchScore(match.score);
+  const scoreVisible = hasScore(match.score);
 
   return (
     <View style={styles.card}>
@@ -29,30 +48,19 @@ export function MatchCard({ match, isFavorite, onToggleFavorite }: Props) {
       </View>
 
       <View style={styles.teamsContainer}>
-        {/* Команда хозяев */}
-        <View style={styles.teamRow}>
-          <View style={styles.teamInfo}>
-            <Text style={styles.teamName}>{match.home.name}</Text>
-            <Text style={styles.city}>{match.home.city}</Text>
-          </View>
-          {scoreText !== null ? (
-            <Text style={styles.teamScore}>{match.score?.home}</Text>
-          ) : null}
-        </View>
-
-        {/* Разделитель */}
+        <TeamRow
+          name={match.home.name}
+          city={match.home.city}
+          score={match.score?.home}
+          showScore={scoreVisible}
+        />
         <View style={styles.divider} />
-
-        {/* Команда гостей */}
-        <View style={styles.teamRow}>
-          <View style={styles.teamInfo}>
-            <Text style={styles.teamName}>{match.away.name}</Text>
-            <Text style={styles.city}>{match.away.city}</Text>
-          </View>
-          {scoreText !== null ? (
-            <Text style={styles.teamScore}>{match.score?.away}</Text>
-          ) : null}
-        </View>
+        <TeamRow
+          name={match.away.name}
+          city={match.away.city}
+          score={match.score?.away}
+          showScore={scoreVisible}
+        />
       </View>
     </View>
   );
@@ -106,9 +114,6 @@ const styles = StyleSheet.create({
   badge_postponed: {
     backgroundColor: '#fffbeb',
   },
-  badge_other: {
-    backgroundColor: '#f3f4f6',
-  },
   badgeText: {
     fontSize: 12,
     fontWeight: '600',
@@ -125,9 +130,6 @@ const styles = StyleSheet.create({
   },
   badgeText_postponed: {
     color: '#b45309',
-  },
-  badgeText_other: {
-    color: '#4b5563',
   },
   teamsContainer: {
     marginTop: 4,

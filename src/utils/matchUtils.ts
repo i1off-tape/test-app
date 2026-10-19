@@ -15,7 +15,6 @@ export function formatMatchDate(startsAt: string | null): string {
       return 'Дата уточняется';
     }
 
-    // Форматирование с использованием локали устройства и часового пояса устройства
     const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
       day: 'numeric',
       month: 'short',
@@ -30,14 +29,11 @@ export function formatMatchDate(startsAt: string | null): string {
 }
 
 /**
- * Форматирует счёт матча.
- * Корректно обрабатывает счёт 0:0 (0 является falsy в JavaScript).
+ * Проверяет наличие счёта в матче.
+ * Корректно учитывает счёт 0:0.
  */
-export function formatMatchScore(score: MatchScore): string | null {
-  if (!score || typeof score.home !== 'number' || typeof score.away !== 'number') {
-    return null;
-  }
-  return `${score.home} : ${score.away}`;
+export function hasScore(score: MatchScore): boolean {
+  return score !== null && typeof score.home === 'number' && typeof score.away === 'number';
 }
 
 /**
@@ -45,7 +41,7 @@ export function formatMatchScore(score: MatchScore): string | null {
  */
 export function getMatchStatusInfo(match: Match): {
   label: string;
-  type: 'finished' | 'scheduled' | 'live' | 'postponed' | 'other';
+  type: 'finished' | 'scheduled' | 'live' | 'postponed';
 } {
   switch (match.status) {
     case 'finished':
@@ -58,23 +54,22 @@ export function getMatchStatusInfo(match: Match): {
     }
     case 'postponed':
       return { label: 'Перенесён', type: 'postponed' };
-    default:
-      return { label: match.status || 'Неизвестно', type: 'other' };
   }
 }
 
 /**
  * Фильтрация матчей по категориям:
  * - 'all': все матчи
- * - 'upcoming': матчи, которые ещё не завершились (scheduled, live, postponed)
+ * - 'live': матчи, проходящие в данный момент (live)
+ * - 'upcoming': запланированные или перенесённые несыгранные матчи (scheduled, postponed)
  * - 'finished': завершённые матчи (finished)
  */
 export function filterMatches(matches: Match[], filter: MatchFilter): Match[] {
   switch (filter) {
+    case 'live':
+      return matches.filter((m) => m.status === 'live');
     case 'upcoming':
-      return matches.filter(
-        (m) => m.status === 'scheduled' || m.status === 'live' || m.status === 'postponed'
-      );
+      return matches.filter((m) => m.status === 'scheduled' || m.status === 'postponed');
     case 'finished':
       return matches.filter((m) => m.status === 'finished');
     case 'all':

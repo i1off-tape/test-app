@@ -8,12 +8,12 @@ import {
   Text,
   View,
 } from 'react-native';
+import { fetchMatches } from '../api/matches';
 import { FilterTabs } from '../components/FilterTabs';
 import { MatchCard } from '../components/MatchCard';
 import { UpdatedAgo } from '../components/UpdatedAgo';
-import { MATCHES_URL } from '../config';
 import { useFavorites } from '../hooks/useFavorites';
-import { Match, MatchesApiResponse, MatchFilter } from '../types/match';
+import { Match, MatchFilter } from '../types/match';
 import { filterMatches } from '../utils/matchUtils';
 
 export function MatchesScreen() {
@@ -26,6 +26,7 @@ export function MatchesScreen() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [currentFilter, setCurrentFilter] = useState<MatchFilter>('all');
 
+  // Загрузка данных по запросу пользователя (обновление / повтор)
   const loadMatches = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
@@ -35,11 +36,7 @@ export function MatchesScreen() {
     setError(null);
 
     try {
-      const response = await fetch(MATCHES_URL);
-      if (!response.ok) {
-        throw new Error(`Ошибка загрузки данных (${response.status})`);
-      }
-      const data: MatchesApiResponse = await response.json();
+      const data = await fetchMatches();
       setMatches(data.matches || []);
       setRound(data.round ?? null);
       setLastUpdated(new Date());
@@ -55,22 +52,19 @@ export function MatchesScreen() {
     }
   }, []);
 
+  // Первоначальная загрузка при монтировании
   useEffect(() => {
     let isCancelled = false;
 
-    async function initialFetch() {
-      try {
-        const response = await fetch(MATCHES_URL);
-        if (!response.ok) {
-          throw new Error(`Ошибка загрузки данных (${response.status})`);
-        }
-        const data: MatchesApiResponse = await response.json();
+    fetchMatches()
+      .then((data) => {
         if (!isCancelled) {
           setMatches(data.matches || []);
           setRound(data.round ?? null);
           setLastUpdated(new Date());
         }
-      } catch (err) {
+      })
+      .catch((err) => {
         if (!isCancelled) {
           setError(
             err instanceof Error
@@ -78,14 +72,12 @@ export function MatchesScreen() {
               : 'Не удалось загрузить данные. Проверьте интернет-соединение.'
           );
         }
-      } finally {
+      })
+      .finally(() => {
         if (!isCancelled) {
           setLoading(false);
         }
-      }
-    }
-
-    initialFetch();
+      });
 
     return () => {
       isCancelled = true;
@@ -95,6 +87,7 @@ export function MatchesScreen() {
   const counts = useMemo(() => {
     return {
       all: matches.length,
+      live: filterMatches(matches, 'live').length,
       upcoming: filterMatches(matches, 'upcoming').length,
       finished: filterMatches(matches, 'finished').length,
     };
@@ -104,46 +97,49 @@ export function MatchesScreen() {
     return filterMatches(matches, currentFilter);
   }, [matches, currentFilter]);
 
-  const renderHeader = () => (
-    <View style={styles.headerArea}>
-      <View style={styles.titleRow}>
-        <View>
-          <Text style={styles.title}>Матчи тура</Text>
-          {round !== null ? (
-            <Text style={styles.roundSubtitle}>Тур {round}</Text>
-          ) : null}
+  const renderHeader = useCallback(
+    () => (
+      <View style={styles.headerArea}>
+        <View style={styles.titleRow}>
+          <View>
+            <Text style={styles.title}>Матчи тура</Text>
+            {round !== null ? (
+              <Text style={styles.roundSubtitle}>Тур {round}</Text>
+            ) : null}
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.refreshButton,
+              pressed && styles.refreshButtonPressed,
+              refreshing && styles.refreshButtonDisabled,
+            ]}
+            onPress={() => loadMatches(true)}
+            disabled={refreshing}
+            accessibilityRole="button"
+            accessibilityLabel="Обновить данные"
+          >
+            <Text style={styles.refreshButtonText}>
+              {refreshing ? 'Обновление...' : 'Обновить'}
+            </Text>
+          </Pressable>
         </View>
 
-        <Pressable
-          style={({ pressed }) => [
-            styles.refreshButton,
-            pressed && styles.refreshButtonPressed,
-            refreshing && styles.refreshButtonDisabled,
-          ]}
-          onPress={() => loadMatches(true)}
-          disabled={refreshing}
-          accessibilityRole="button"
-          accessibilityLabel="Обновить данные"
-        >
-          <Text style={styles.refreshButtonText}>
-            {refreshing ? 'Обновление...' : 'Обновить'}
-          </Text>
-        </Pressable>
-      </View>
+        <View style={styles.statusRow}>
+          {lastUpdated ? <UpdatedAgo since={lastUpdated} /> : null}
+        </View>
 
-      <View style={styles.statusRow}>
-        {lastUpdated ? <UpdatedAgo since={lastUpdated} /> : null}
+        <FilterTabs
+          currentFilter={currentFilter}
+          onSelectFilter={setCurrentFilter}
+          counts={counts}
+        />
       </View>
-
-      <FilterTabs
-        currentFilter={currentFilter}
-        onSelectFilter={setCurrentFilter}
-        counts={counts}
-      />
-    </View>
+    ),
+    [round, refreshing, loadMatches, lastUpdated, currentFilter, counts]
   );
 
-  const renderEmpty = () => {
+  const renderEmpty = useCallback(() => {
     if (loading) {
       return null;
     }
@@ -165,7 +161,7 @@ export function MatchesScreen() {
         )}
       </View>
     );
-  };
+  }, [loading, currentFilter]);
 
   if (loading && matches.length === 0) {
     return (
