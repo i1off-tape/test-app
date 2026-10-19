@@ -19,3 +19,18 @@ npx expo lint               # lint
 ```
 
 Run typecheck before declaring a task done. Do not add native modules that need a development build — the app must keep working in Expo Go.
+
+## Agent skills
+
+### Issue tracker
+
+GitHub issues via `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Canonical names, unchanged. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context (`GLOSSARY.md` + `docs/adr/` at the root). See `docs/agents/domain.md`.
+
