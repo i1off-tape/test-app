@@ -54,8 +54,41 @@ export function MatchesScreen() {
   }, []);
 
   useEffect(() => {
-    loadMatches();
-  }, [loadMatches]);
+    let isCancelled = false;
+
+    async function initialFetch() {
+      try {
+        const response = await fetch(MATCHES_URL);
+        if (!response.ok) {
+          throw new Error(`Ошибка загрузки данных (${response.status})`);
+        }
+        const data: MatchesApiResponse = await response.json();
+        if (!isCancelled) {
+          setMatches(data.matches || []);
+          setRound(data.round ?? null);
+          setLastUpdated(new Date());
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Не удалось загрузить данные. Проверьте интернет-соединение.'
+          );
+        }
+      } finally {
+        if (!isCancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    initialFetch();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
 
   const counts = useMemo(() => {
     return {
