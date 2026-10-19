@@ -13,10 +13,12 @@ import { FilterTabs } from '../components/FilterTabs';
 import { MatchCard } from '../components/MatchCard';
 import { UpdatedAgo } from '../components/UpdatedAgo';
 import { useFavorites } from '../hooks/useFavorites';
+import { useTheme } from '../theme/ThemeContext';
 import { Match, MatchFilter } from '../types/match';
 import { filterMatches } from '../utils/matchUtils';
 
 export function MatchesScreen() {
+  const { theme, colors, toggleTheme } = useTheme();
   const { isFavorite, toggle } = useFavorites();
   const [matches, setMatches] = useState<Match[]>([]);
   const [round, setRound] = useState<number | null>(null);
@@ -26,7 +28,6 @@ export function MatchesScreen() {
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [currentFilter, setCurrentFilter] = useState<MatchFilter>('all');
 
-  // Загрузка данных по запросу пользователя (обновление / повтор)
   const loadMatches = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true);
@@ -52,7 +53,6 @@ export function MatchesScreen() {
     }
   }, []);
 
-  // Первоначальная загрузка при монтировании
   useEffect(() => {
     let isCancelled = false;
 
@@ -102,27 +102,57 @@ export function MatchesScreen() {
       <View style={styles.headerArea}>
         <View style={styles.titleRow}>
           <View>
-            <Text style={styles.title}>Матчи тура</Text>
+            <Text style={[styles.title, { color: colors.textPrimary }]}>
+              Матчи тура
+            </Text>
             {round !== null ? (
-              <Text style={styles.roundSubtitle}>Тур {round}</Text>
+              <Text style={[styles.roundSubtitle, { color: colors.textSecondary }]}>
+                Тур {round}
+              </Text>
             ) : null}
           </View>
 
-          <Pressable
-            style={({ pressed }) => [
-              styles.refreshButton,
-              pressed && styles.refreshButtonPressed,
-              refreshing && styles.refreshButtonDisabled,
-            ]}
-            onPress={() => loadMatches(true)}
-            disabled={refreshing}
-            accessibilityRole="button"
-            accessibilityLabel="Обновить данные"
-          >
-            <Text style={styles.refreshButtonText}>
-              {refreshing ? 'Обновление...' : 'Обновить'}
-            </Text>
-          </Pressable>
+          <View style={styles.actionsRow}>
+            {/* Кнопка переключения темы */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButton,
+                {
+                  backgroundColor: colors.buttonBackground,
+                  borderColor: colors.buttonBorder,
+                },
+                pressed && styles.actionButtonPressed,
+              ]}
+              onPress={toggleTheme}
+              accessibilityRole="button"
+              accessibilityLabel={
+                theme === 'dark' ? 'Включить светлую тему' : 'Включить тёмную тему'
+              }
+            >
+              <Text style={styles.themeIcon}>{theme === 'dark' ? '☀️' : '🌙'}</Text>
+            </Pressable>
+
+            {/* Кнопка обновления */}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButton,
+                {
+                  backgroundColor: colors.buttonBackground,
+                  borderColor: colors.buttonBorder,
+                },
+                pressed && styles.actionButtonPressed,
+                refreshing && styles.actionButtonDisabled,
+              ]}
+              onPress={() => loadMatches(true)}
+              disabled={refreshing}
+              accessibilityRole="button"
+              accessibilityLabel="Обновить данные"
+            >
+              <Text style={[styles.actionButtonText, { color: colors.textPrimary }]}>
+                {refreshing ? 'Обновление...' : 'Обновить'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
         <View style={styles.statusRow}>
@@ -136,7 +166,17 @@ export function MatchesScreen() {
         />
       </View>
     ),
-    [round, refreshing, loadMatches, lastUpdated, currentFilter, counts]
+    [
+      colors,
+      round,
+      theme,
+      toggleTheme,
+      refreshing,
+      loadMatches,
+      lastUpdated,
+      currentFilter,
+      counts,
+    ]
   );
 
   const renderEmpty = useCallback(() => {
@@ -144,9 +184,16 @@ export function MatchesScreen() {
       return null;
     }
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyTitle}>Матчей не найдено</Text>
-        <Text style={styles.emptyText}>
+      <View
+        style={[
+          styles.emptyContainer,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+          Матчей не найдено
+        </Text>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
           {currentFilter !== 'all'
             ? 'В этой категории сейчас нет матчей'
             : 'Список матчей пуст'}
@@ -161,23 +208,29 @@ export function MatchesScreen() {
         )}
       </View>
     );
-  }, [loading, currentFilter]);
+  }, [loading, colors, currentFilter]);
 
   if (loading && matches.length === 0) {
     return (
-      <View style={styles.centered}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#1d4ed8" />
-        <Text style={styles.loadingText}>Загрузка матчей...</Text>
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>
+          Загрузка матчей...
+        </Text>
       </View>
     );
   }
 
   if (error && matches.length === 0) {
     return (
-      <View style={styles.centered}>
+      <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Text style={styles.errorIcon}>⚠️</Text>
-        <Text style={styles.errorTitle}>Не удалось загрузить матчи</Text>
-        <Text style={styles.errorDescription}>{error}</Text>
+        <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>
+          Не удалось загрузить матчи
+        </Text>
+        <Text style={[styles.errorDescription, { color: colors.textSecondary }]}>
+          {error}
+        </Text>
         <Pressable
           style={styles.retryButton}
           onPress={() => loadMatches(false)}
@@ -190,7 +243,7 @@ export function MatchesScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
         data={filteredMatches}
         keyExtractor={(item) => item.id}
@@ -209,7 +262,7 @@ export function MatchesScreen() {
             refreshing={refreshing}
             onRefresh={() => loadMatches(true)}
             colors={['#1d4ed8']}
-            tintColor="#1d4ed8"
+            tintColor={colors.textPrimary}
           />
         }
       />
@@ -220,7 +273,6 @@ export function MatchesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
   },
   listContent: {
     paddingHorizontal: 16,
@@ -238,12 +290,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#111827',
   },
   roundSubtitle: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
     marginTop: 2,
   },
   statusRow: {
@@ -252,36 +302,42 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     minHeight: 20,
   },
-  refreshButton: {
+  actionsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  actionButton: {
     paddingHorizontal: 12,
     paddingVertical: 7,
-    backgroundColor: '#ffffff',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#d1d5db',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  refreshButtonPressed: {
-    backgroundColor: '#f3f4f6',
+  actionButtonPressed: {
+    opacity: 0.8,
   },
-  refreshButtonDisabled: {
+  actionButtonDisabled: {
     opacity: 0.6,
   },
-  refreshButtonText: {
+  actionButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+  },
+  themeIcon: {
+    fontSize: 14,
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 24,
-    backgroundColor: '#f9fafb',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 15,
-    color: '#4b5563',
   },
   errorIcon: {
     fontSize: 40,
@@ -290,13 +346,11 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#111827',
     marginBottom: 8,
     textAlign: 'center',
   },
   errorDescription: {
     fontSize: 14,
-    color: '#6b7280',
     textAlign: 'center',
     marginBottom: 20,
   },
@@ -315,21 +369,17 @@ const styles = StyleSheet.create({
     padding: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#ffffff',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
     marginTop: 12,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#111827',
     marginBottom: 4,
   },
   emptyText: {
     fontSize: 14,
-    color: '#6b7280',
     textAlign: 'center',
   },
   resetFilterButton: {
